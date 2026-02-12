@@ -7,32 +7,24 @@ module.exports = async (req, res) => {
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    const TOKEN = process.env.BOT_TOKEN;
-    const CHAT_ID = process.env.CHAT_ID;
-    const { key, value, type, action } = req.body;
-
-    // Rule 4: Value can't be empty for saves
-    if (!value && action === 'save') return res.status(200).json({ code: 600 });
-
     try {
-        let message = '';
-        if (type === 'file') {
-            message = ` *FILE KEY:* ${key}\n *URL:* ${value}`;
-        } else {
-            message = ` *KEY:* ${key}\n *DATA (${type || 'text'}):* ${value}`;
+        const { key, value, type, action } = req.body || {};
+        const TOKEN = process.env.BOT_TOKEN;
+        const CHAT_ID = process.env.CHAT_ID;
+
+        if (!value && action === 'save') {
+            return res.status(200).json({ code: 600 });
         }
 
         await axios.post(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
             chat_id: CHAT_ID,
-            text: message,
+            text: ` *KEY:* ${key}\n *DATA:* ${value}`,
             parse_mode: 'Markdown'
         });
 
-        // Rule 4: Success Code
-        return res.status(200).json({ code: 700 }); 
+        return res.status(200).json({ code: 700 });
     } catch (err) {
-        // Rule 4: Error Codes
-        if (err.response && err.response.status === 429) return res.status(200).json({ code: 460 });
+        console.error(err);
         return res.status(200).json({ code: 580 });
     }
 };
