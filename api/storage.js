@@ -4,47 +4,43 @@ module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     const TOKEN = process.env.BOT_TOKEN;
     const CHAT_ID = process.env.CHAT_ID;
     const params = (req.method === 'POST') ? req.body : req.query;
-    const { action, key, value, name, data, userId } = params;
+    
+    const action = params.action;
+    const userKey = params.userKey;
+    const item = params.item;
+    const val = params.value || params.data;
+    const type = params.type || 'KEY';
 
     try {
-        if (action === 'store') {
-            const entry = name ? `FILE:${name}` : `KEY:${key}`;
-            const finalData = data || value;
+        if (action === 'post') {
             await axios.post(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
                 chat_id: CHAT_ID,
-                text: `ID:${userId}\n${entry}\nDATA:${finalData}\nTIME:${Date.now()}`
+                text: `AUTH:${userKey}\nTYPE:${type}\nITEM:${item}\nDATA:${val}\nTS:${Date.now()}`
             });
             return res.status(200).json({ code: 700 });
         }
 
         if (action === 'get') {
             const response = await axios.get(`https://api.telegram.org/bot${TOKEN}/getUpdates?offset=-100`);
-            const updates = response.data.result;
-            
-            if (!updates || updates.length === 0) return res.status(200).json({ value: "Empty History", code: 404 });
-
-            const userTag = `ID:${userId}`;
-            const itemTag = name ? `FILE:${name}` : `KEY:${key}`;
-            
-            const reversedUpdates = [...updates].reverse();
-            const match = reversedUpdates.find(u => {
+            const updates = response.data.result.reverse();
+            const match = updates.find(u => {
                 const m = u.channel_post || u.message;
-                return m && m.text && m.text.includes(userTag) && m.text.includes(itemTag);
+                return m && m.text && m.text.includes(`AUTH:${userKey}`) && m.text.includes(`ITEM:${item}`);
             });
 
             if (match) {
-                const msgText = (match.channel_post || match.message).text;
-                const val = msgText.split('DATA:')[1].split('\n')[0].trim();
-                return res.status(200).json({ value: val, code: 700 });
+                const text = (match.channel_post || match.message).text;
+                return res.status(200).json({ value: text.split('DATA:')[1].split('\n')[0].trim(), code: 700 });
             }
             return res.status(200).json({ value: "Not Found", code: 404 });
         }
+        
+        return res.status(200).json({ code: 160 });
     } catch (e) {
         return res.status(200).json({ code: 580 });
     }
