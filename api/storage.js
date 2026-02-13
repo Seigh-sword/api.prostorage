@@ -26,18 +26,20 @@ module.exports = async (req, res) => {
         }
 
         if (action === 'get') {
-            const response = await axios.get(`https://api.telegram.org/bot${TOKEN}/getUpdates?limit=100&offset=-1`);
+            const response = await axios.get(`https://api.telegram.org/bot${TOKEN}/getUpdates?limit=100&offset=-100`);
             const updates = response.data.result.reverse();
             
             const match = updates.find(u => {
-                const m = u.channel_post || u.message;
-                return m && m.text && m.text.includes(`ID:${id}`) && m.text.includes(`ITEM:${item}`);
+                const text = (u.channel_post && u.channel_post.text) || (u.message && u.message.text);
+                return text && text.includes(`ID:${id}`) && text.includes(`ITEM:${item}`);
             });
 
             if (match) {
                 const text = (match.channel_post || match.message).text;
-                const extraction = text.split('DATA:')[1];
-                return res.status(200).json({ value: extraction.trim(), code: 700 });
+                const part = text.split('DATA:')[1];
+                if (part) {
+                    return res.status(200).json({ value: part.trim(), code: 700 });
+                }
             }
             return res.status(200).json({ value: "Not Found", code: 404 });
         }
