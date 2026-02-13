@@ -10,17 +10,13 @@ module.exports = async (req, res) => {
     const TOKEN = process.env.BOT_TOKEN;
     const CHAT_ID = process.env.CHAT_ID;
     const params = (req.method === 'POST') ? req.body : req.query;
-    
-    const action = params.action;
-    const id = params.id;
-    const item = params.item;
-    const val = params.value || params.data;
+    const { action, id, item, value, data } = params;
 
     try {
         if (action === 'post') {
             await axios.post(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
                 chat_id: CHAT_ID,
-                text: `ID:${id}\nITEM:${item}\nDATA:${val}`
+                text: `ID:${id}\nITEM:${item}\nDATA:${value || data}`
             });
             return res.status(200).json({ code: 700 });
         }
@@ -30,16 +26,14 @@ module.exports = async (req, res) => {
             const updates = response.data.result.reverse();
             
             const match = updates.find(u => {
-                const text = (u.channel_post && u.channel_post.text) || (u.message && u.message.text);
-                return text && text.includes(`ID:${id}`) && text.includes(`ITEM:${item}`);
+                const post = u.channel_post || u.edited_channel_post;
+                return post && post.text && post.text.includes(`ID:${id}`) && post.text.includes(`ITEM:${item}`);
             });
 
             if (match) {
-                const text = (match.channel_post || match.message).text;
-                const part = text.split('DATA:')[1];
-                if (part) {
-                    return res.status(200).json({ value: part.trim(), code: 700 });
-                }
+                const post = match.channel_post || match.edited_channel_post;
+                const val = post.text.split('DATA:')[1];
+                if (val) return res.status(200).json({ value: val.trim(), code: 700 });
             }
             return res.status(200).json({ value: "Not Found", code: 404 });
         }
