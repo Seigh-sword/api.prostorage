@@ -1,43 +1,43 @@
-const axios = require('axios');
+(function(Scratch) {
+  'use strict';
+  let lastTime = 0;
+  let status = "700";
+  const API = 'https://apiprostorage.vercel.app/api/storage';
 
-module.exports = async (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-    if (req.method === 'OPTIONS') return res.status(200).end();
-
-    const TOKEN = process.env.BOT_TOKEN;
-    const CHAT_ID = process.env.CHAT_ID;
-    const params = (req.method === 'POST') ? req.body : req.query;
-    const { action, id, item, value, data } = params;
-
-    try {
-        if (action === 'post') {
-            await axios.post(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-                chat_id: CHAT_ID,
-                text: `ID:${id}\nITEM:${item}\nDATA:${value || data}`
-            });
-            return res.status(200).json({ code: 700 });
-        }
-
-        if (action === 'get') {
-            const response = await axios.get(`https://api.telegram.org/bot${TOKEN}/getUpdates?limit=100&offset=-100`);
-            const updates = response.data.result.reverse();
-            
-            const match = updates.find(u => {
-                const post = u.channel_post || u.edited_channel_post;
-                return post && post.text && post.text.includes(`ID:${id}`) && post.text.includes(`ITEM:${item}`);
-            });
-
-            if (match) {
-                const post = match.channel_post || match.edited_channel_post;
-                const val = post.text.split('DATA:')[1];
-                if (val) return res.status(200).json({ value: val.trim(), code: 700 });
-            }
-            return res.status(200).json({ value: "Not Found", code: 404 });
-        }
-    } catch (e) {
-        return res.status(200).json({ code: 580 });
+  class ProStoragePro {
+    getInfo() {
+      return {
+        id: 'prostoragepro',
+        name: 'ProStorage Channel',
+        color1: '#001eff',
+        blocks: [
+          { opcode: 'postK', blockType: Scratch.BlockType.COMMAND, text: 'channel save [V] to [I] ID [ID]', arguments: { V: { type: Scratch.ArgumentType.STRING, defaultValue: '100' }, I: { type: Scratch.ArgumentType.STRING, defaultValue: 'Score' }, ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'User1' } } },
+          { opcode: 'getK', blockType: Scratch.BlockType.REPORTER, text: 'channel load [I] ID [ID]', arguments: { I: { type: Scratch.ArgumentType.STRING, defaultValue: 'Score' }, ID: { type: Scratch.ArgumentType.STRING, defaultValue: 'User1' } } },
+          { opcode: 'getS', blockType: Scratch.BlockType.REPORTER, text: 'server status' }
+        ]
+      };
     }
-};
+
+    async postK(a) { await this.req({ action: 'post', id: a.ID, item: a.I, value: a.V }); }
+    
+    async getK(a) { 
+        try {
+            const r = await fetch(`${API}?action=get&id=${a.ID}&item=${a.I}`);
+            const d = await r.json();
+            return d.value || "Not Found";
+        } catch(e) { return "Error"; }
+    }
+
+    async req(b) {
+      if (Date.now() - lastTime < 1500) { status = "460"; return; }
+      lastTime = Date.now();
+      try {
+        const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) });
+        status = String((await r.json()).code);
+      } catch (e) { status = "580"; }
+    }
+
+    getS() { return status; }
+  }
+  Scratch.extensions.register(new ProStoragePro());
+})(Scratch);
