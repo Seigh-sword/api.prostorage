@@ -43,4 +43,4 @@ module.exports = async (req, res) => {
     } catch (e) {
         return res.status(200).json({ code: 580 });
     }
-};
+}; 
