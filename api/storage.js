@@ -4,6 +4,7 @@ module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     const TOKEN = process.env.BOT_TOKEN;
@@ -17,20 +18,24 @@ module.exports = async (req, res) => {
             const finalData = data || value;
             await axios.post(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
                 chat_id: CHAT_ID,
-                text: `USER:${userId}\n${entry}\nDATA:${finalData}\nID:${Date.now()}`
+                text: `ID:${userId}\n${entry}\nDATA:${finalData}\nTIME:${Date.now()}`
             });
             return res.status(200).json({ code: 700 });
         }
 
         if (action === 'get') {
-            const response = await axios.get(`https://api.telegram.org/bot${TOKEN}/getUpdates?limit=100&offset=-1`);
-            const updates = response.data.result.reverse();
-            const userTag = `USER:${userId}`;
+            const response = await axios.get(`https://api.telegram.org/bot${TOKEN}/getUpdates?offset=-100`);
+            const updates = response.data.result;
+            
+            if (!updates || updates.length === 0) return res.status(200).json({ value: "Empty History", code: 404 });
+
+            const userTag = `ID:${userId}`;
             const itemTag = name ? `FILE:${name}` : `KEY:${key}`;
             
-            const match = updates.find(u => {
-                const msg = u.channel_post || u.message;
-                return msg && msg.text && msg.text.includes(userTag) && msg.text.includes(itemTag);
+            const reversedUpdates = [...updates].reverse();
+            const match = reversedUpdates.find(u => {
+                const m = u.channel_post || u.message;
+                return m && m.text && m.text.includes(userTag) && m.text.includes(itemTag);
             });
 
             if (match) {
@@ -43,4 +48,4 @@ module.exports = async (req, res) => {
     } catch (e) {
         return res.status(200).json({ code: 580 });
     }
-}; 
+};
