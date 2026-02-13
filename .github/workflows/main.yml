@@ -1,24 +1,23 @@
-name: ProStorage Sync
+name: ProStorage Forever
 on:
-  push:
-    branches: [ main ]
   schedule:
-    - cron: '*/30 * * * *' 
+    - cron: '0 * * * *'
+  workflow_dispatch:
 
 jobs:
-  build:
+  run-db:
     runs-on: ubuntu-latest
+    timeout-minutes: 350
     steps:
-      - uses: actions/checkout@v3
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '18'
-      - run: npm install tgdb
-      - name: Run Storage Sync
+          node-version: 20
+      - run: npm install
+      - name: Keep Alive Loop
         env:
           API_ID: ${{ secrets.API_ID }}
           API_HASH: ${{ secrets.API_HASH }}
           SESSION: ${{ secrets.SESSION }}
-          CHANNEL: ${{ secrets.CHANNEL }}
+          CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
         run: node index.js
