@@ -2,7 +2,8 @@
   "dependencies": {
     "axios": "^1.13.5",
     "input": "^1.0.1",
-    "telegram": "^2.26.22"
+    "telegram": "^2.26.22",
+    "tgdb-core": "github:dcdunkan/tgdb#main"
   },
   "name": "api.prostorage",
   "version": "1.0.0",

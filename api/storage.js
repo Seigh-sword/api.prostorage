@@ -1,57 +1,42 @@
-const axios = require('axios');
+const { TGDB } = require("tgdb");
+
+let db = null;
+
+const startDB = async () => {
+    if (db) return db;
+    db = new TGDB({
+        apiId: parseInt(process.env.API_ID),
+        apiHash: process.env.API_HASH,
+        session: process.env.SESSION,
+        channelId: process.env.CHANNEL_ID
+    });
+    return db;
+};
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    if (req.method === 'OPTIONS') return res.status(200).end();
-
-    const TOKEN = process.env.BOT_TOKEN;
-    const CHAT_ID = process.env.CHAT_ID;
-    const { action, id, item, value, data } = (req.method === 'POST') ? req.body : req.query;
-    const finalData = value || data;
+    const { action, id, item, value } = (req.method === 'POST') ? req.body : req.query;
+    
+    // SFW Filter
+    if (value && /hentai|porn|nsfw/i.test(value)) {
+        return res.status(200).json({ code: 403, msg: "SFW ONLY!" });
+    }
 
     try {
-        const getUpdates = await axios.post(`https://api.telegram.org/bot${TOKEN}/getUpdates`, {
-            limit: 100, offset: -100, allowed_updates: ["channel_post"]
-        });
-        const updates = getUpdates.data.result.reverse();
-        const match = updates.find(u => {
-            const p = u.channel_post;
-            return p && p.text && p.text.includes(`ID:${id}`) && p.text.includes(`ITEM:${item}`);
-        });
+        const database = await startDB();
+        const key = `${id}_${item}`;
 
-        if (action === 'post') {
-            await axios.post(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
-                chat_id: CHAT_ID,
-                text: `ID:${id}\nITEM:${item}\nDATA:${finalData}`
-            });
+        if (action === 'post' || action === 'edit') {
+            await database.set(key, value);
             return res.status(200).json({ code: 700 });
         }
-
-        if (action === 'edit' && match) {
-            await axios.post(`https://api.telegram.org/bot${TOKEN}/editMessageText`, {
-                chat_id: CHAT_ID,
-                message_id: match.channel_post.message_id,
-                text: `ID:${id}\nITEM:${item}\nDATA:${finalData}`
-            });
+        if (action === 'delete') {
+            await database.delete(key);
             return res.status(200).json({ code: 700 });
         }
-
-        if (action === 'delete' && match) {
-            await axios.post(`https://api.telegram.org/bot${TOKEN}/deleteMessage`, {
-                chat_id: CHAT_ID,
-                message_id: match.channel_post.message_id
-            });
-            return res.status(200).json({ code: 700 });
-        }
-
         if (action === 'get') {
-            if (match) {
-                const val = match.channel_post.text.split('DATA:')[1];
-                return res.status(200).json({ value: val.trim(), code: 700 });
-            }
-            return res.status(200).json({ value: "Not Found", code: 404 });
+            const data = await database.get(key);
+            return res.status(200).json({ value: data || "Not Found", code: 700 });
         }
     } catch (e) {
         return res.status(200).json({ code: 580 });
