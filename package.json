@@ -1,12 +1,12 @@
 {
-  "name": "api.prostorage",
-  "version": "1.0.0",
+  "name": "prostorage-engine-v2",
+  "version": "2.0.0",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "tgdb": "latest",
+    "telegram": "latest",
     "express": "latest",
     "cors": "latest"
   }
