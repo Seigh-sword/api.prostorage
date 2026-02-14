@@ -13,12 +13,12 @@ const db = new TGDB({
     channelId: process.env.CHANNEL_ID
 });
 
-app.post("/api/storage", async (req, res) => {
-    const { action, id, item, value } = req.body;
+app.all("/api/storage", async (req, res) => {
+    const { action, id, item, value } = (req.method === 'POST') ? req.body : req.query;
     const key = `${id}_${item}`;
-
+    
     if (value && /hentai|porn|nsfw/i.test(value)) {
-        return res.json({ code: 403, msg: "SFW ONLY!" });
+        return res.json({ code: 403, msg: "SFW ONLY" });
     }
 
     try {
@@ -38,5 +38,5 @@ app.post("/api/storage", async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server is running forever on port ${PORT}`);
+    console.log("Server active");
 });

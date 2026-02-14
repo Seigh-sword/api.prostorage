@@ -16,6 +16,9 @@
     "type": "git",
     "url": "git+https://github.com/Seigh-sword/api.prostorage.git"
   },
+  "scripts": {
+  "start": "node index.js"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
