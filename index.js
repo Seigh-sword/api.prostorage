@@ -21,7 +21,7 @@ let queueBusyUntil = 0;
         await client.connect();
         console.log("700");
     } catch (e) {
-        console.error("190");
+        console.error("190", e.message);
     }
 })();
 
@@ -30,46 +30,36 @@ app.all("/", async (req, res) => {
     const { action, id, item, value } = isPost ? req.body : req.query;
     
     if (!id || !item) return res.json({ code: 170 });
+    if (!client.connected) return res.json({ code: 190 });
 
     const now = Date.now();
-
     if (now < queueBusyUntil) {
-        return res.json({ 
-            code: 160, 
-            retryIn: Math.ceil((queueBusyUntil - now) / 1000) 
-        });
+        return res.json({ code: 160, retryIn: Math.ceil((queueBusyUntil - now) / 1000) });
     }
 
     try {
+        const target = channelId.startsWith("-100") ? BigInt(channelId) : channelId;
+
         if (action === 'post' || action === 'edit') {
             const sizeMb = value ? (Buffer.byteLength(value, 'utf8') / 1048576) : 0;
-            
             if (sizeMb > 2000) return res.json({ code: 340 });
             if (value && /hentai|porn|nsfw/i.test(value)) return res.json({ code: 230 });
 
             let lockoutMs = 3000;
-            if (sizeMb > 100) {
-                lockoutMs += (sizeMb * 1000); 
-            }
-            
+            if (sizeMb > 100) { lockoutMs += (sizeMb * 1000); }
             queueBusyUntil = now + lockoutMs;
 
-            await client.sendMessage(channelId, { 
+            await client.sendMessage(target, { 
                 message: `ENTRY_${id}_${item}\nDATA_START\n${value}\nDATA_END` 
             });
-            return res.json({ code: 700, wait: lockoutMs });
+            return res.json({ code: 700 });
 
         } else if (action === 'get') {
-            const results = await client.getMessages(channelId, { 
-                search: `ENTRY_${id}_${item}`, 
-                limit: 1 
-            });
-            
+            const results = await client.getMessages(target, { search: `ENTRY_${id}_${item}`, limit: 1 });
             if (results && results.length > 0) {
                 const parts = results[0].message.split("DATA_START\n");
                 if (parts.length > 1) {
-                    const finalValue = parts[1].split("\nDATA_END")[0];
-                    return res.json({ value: finalValue, code: 700 });
+                    return res.json({ value: parts[1].split("\nDATA_END")[0], code: 700 });
                 }
             }
             return res.json({ value: "Not Found", code: 700 });
@@ -90,4 +80,6 @@ app.get("/status", (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {});
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+});
