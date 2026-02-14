@@ -1,30 +1,14 @@
 {
-  "dependencies": {
-    "axios": "^1.13.5",
-    "input": "^1.0.1",
-    "telegram": "^2.26.22",
-    "tgdb-core": "github:dcdunkan/tgdb#main"
-  },
   "name": "api.prostorage",
   "version": "1.0.0",
-  "description": "Hey! so, this is the github page which powers the ProStorage extension on, penguinmod... ya everything like storing to, getting the data are... handled by this route and  the assets like the icons they are too, here are some icons:",
-  "main": ".js",
+  "description": "A secure API for ProStorage, built with Node.js, Express, and TGDB.",
+  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Seigh-sword/api.prostorage.git"
-  },
-  "scripts": {
-  "start": "node index.js"
-},
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/Seigh-sword/api.prostorage/issues"
-  },
-  "homepage": "https://github.com/Seigh-sword/api.prostorage#readme"
+  "dependencies": {
+    "tgdb": "^0.4.0",
+    "express": "^4.19.2",
+    "cors": "^2.8.5"
+  }
 }
