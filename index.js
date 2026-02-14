@@ -1,4 +1,4 @@
-const { TGDB } = require("tgdb");
+const TGDB = require("tgdb");
 const express = require("express");
 const cors = require("cors");
 const app = express();
