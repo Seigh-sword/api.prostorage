@@ -1,7 +1,6 @@
 {
   "name": "api.prostorage",
   "version": "1.0.0",
-  "description": "A secure API for ProStorage, built with Node.js, Express, and TGDB.",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
